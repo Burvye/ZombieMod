@@ -18,10 +18,17 @@ object BurvyZombieMod : ModInitializer {
         // Zombies already auto aggro and are spawned near players in the factions mod
         // this mod should optimize zombie logic
 
-        // TODO: Overwrite Zombie Logic, simplify down to pathfinding and attacking players only.
+        /* TODO: #1 Overwrite Zombie Logic completely using a mixin.
+            Zombies should have only this logic:
+                1. Look for the player with the shortest squared distance to me, and aggro at them until I cannot pathfind to them.
+                2. If I cannot pathfind to the player I want, look for another nearest player.
+                3. If there are no other nearest players, begin breaking or building to get to them.
+         */
 
-        /* TODO: Add Zombie Goal to damage blocks if these conditions are met:
+        /* TODO: #2 Add Zombie Goal to damage blocks if these conditions are met:
             a. I cannot pathfind to my desired player
+            b. I am not exposed to the sky if the player is above me.
+            c. I am always allowed to dig down if the player is below me.
             Block destruction must follow this pattern:
                 1. There are 4 blocks to choose from. Z represents the zombie:
                                 1 -
@@ -34,7 +41,7 @@ object BurvyZombieMod : ModInitializer {
                 5. If the player has an equal Y level, wait 5 seconds and attack 2 and 3.
          */
 
-        /* TODO: Add Zombie Goal to build upwards if these conditions are met:
+        /* TODO: #3 Add Zombie Goal to build upwards if these conditions are met:
                 a. Players have a HIGHER Y level than my Y level + 1
                 b. I am exposed to the sky
                 c. I was in these conditions 30 seconds ago (Make sure to save only once, NO MEMORY LEAKS)
