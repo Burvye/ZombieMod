@@ -12,7 +12,7 @@ object BurvyZombieMod : ModInitializer {
         // Proceed with mild caution.
         logger.info("Hello Fabric world!")
         for (i in 1..5) {
-            logger.info("Hello Test")
+            logger.info("Hello Test {}", i)
         }
     }
 }
