@@ -97,13 +97,13 @@ public class BlockDestructionGoal extends Goal {
             // below me
         } else if (yDiff < 0) {
             // break below and foot level
-            blocksToBreak.add(backward);
             blocksToBreak.add(zombiePos.below());
+            blocksToBreak.add(forward.below());
             // same Y level
         } else {
             // break eye level and foot level
             blocksToBreak.add(forward);
-            blocksToBreak.add(backward);
+            blocksToBreak.add(forward.below());
         }
 
         // break blocks serverside
