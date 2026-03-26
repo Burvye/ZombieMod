@@ -6,7 +6,6 @@ import org.slf4j.LoggerFactory
 object BurvyZombieMod : ModInitializer {
     private val logger = LoggerFactory.getLogger("burvy-zombie-mod")
 
-
     override fun onInitialize() {
         // This code runs as soon as Minecraft is in a mod-load-ready state.
         // However, some things (like resources) may still be uninitialized.
@@ -25,6 +24,8 @@ object BurvyZombieMod : ModInitializer {
                 3. If there are no other nearest players, begin breaking or building to get to them.
          */
 
+        // Block destruction logic
+
         /* TODO: #2 Add Zombie Goal to damage blocks if these conditions are met:
             a. I cannot pathfind to my desired player
             b. I am not exposed to the sky if the player is above me.
@@ -40,6 +41,8 @@ object BurvyZombieMod : ModInitializer {
                 4. If the player has a lower Y level than the player at all, wait 5 seconds and attack 3 and 4.
                 5. If the player has an equal Y level, wait 5 seconds and attack 2 and 3.
          */
+
+        // Building logic
 
         /* TODO: #3 Add Zombie Goal to build upwards if these conditions are met:
                 a. Players have a HIGHER Y level than my Y level + 1
