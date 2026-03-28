@@ -1,8 +1,13 @@
 package burvy.api.utilities
 
 import net.minecraft.core.BlockPos
+import net.minecraft.core.Holder
+import net.minecraft.network.protocol.game.ClientboundSoundPacket
+import net.minecraft.resources.Identifier
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
+import net.minecraft.sounds.SoundEvent
+import net.minecraft.sounds.SoundSource
 import net.minecraft.world.entity.monster.zombie.Zombie
 import net.minecraft.world.phys.AABB
 import java.util.UUID
@@ -14,6 +19,9 @@ object NoiseChecker {
     private const val STEALTH_COOLDOWN = 1200L // 60s
     private const val LOS_CHECK_INTERVAL = 20
     private const val LOS_RANGE_SQ = 16.0 // 4 blocks squared
+
+    private val ALERT_SOUND: Holder<SoundEvent> =
+        Holder.direct(SoundEvent.createVariableRangeEvent(Identifier.parse("gbg:alert")))
 
     private val noisyPlayers = HashMap<UUID, Long>()
 
@@ -39,8 +47,28 @@ object NoiseChecker {
         pos: BlockPos,
         type: NoiseType,
     ) {
+        val wasQuiet = !isNoisy(player)
         noisyPlayers[player.uuid] = level.server.tickCount.toLong()
         ZombInvestigate.zombAlert(level, pos, type.radius)
+
+        if (wasQuiet) {
+            player.connection.send(
+                ClientboundSoundPacket(
+                    ALERT_SOUND,
+                    SoundSource.HOSTILE,
+                    player.x,
+                    player.y,
+                    player.z,
+                    1.0f,
+                    1.0f,
+                    level.random.nextLong(),
+                ),
+            )
+        }
+    }
+
+    fun clearPlayer(playerId: UUID) {
+        noisyPlayers.remove(playerId)
     }
 
     // gunshot API
