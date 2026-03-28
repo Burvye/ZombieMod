@@ -17,6 +17,6 @@ object TickChecker {
         tickPrev = (System.nanoTime() - tickStart) / 1_000_000.0
     }
 
-    // the only thing you will need
+    // this is the only thing you will need
     fun isLagging(): Boolean = tickPrev > THRESHOLD_MS
 }
