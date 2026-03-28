@@ -6,7 +6,8 @@
     "TickEventMixin",
     "MobAccessor",
     "MonsterSpawnMixin",
-    "ZombieAIMixin"
+    "ZombieAIMixin",
+    "BlockPlaceMixin"
   ],
   "injectors": {
     "defaultRequire": 1

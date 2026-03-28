@@ -38,7 +38,9 @@ object ZombSpawner {
         val zombie = EntityType.ZOMBIE.create(level, EntitySpawnReason.NATURAL) ?: return
         zombie.setPos(pos.x + 0.5, pos.y.toDouble(), pos.z + 0.5)
         zombie.yRot = level.random.nextFloat() * 360
-        zombie.target = target
+        if (NoiseChecker.isNoisy(target)) {
+            zombie.target = target
+        }
         level.addFreshEntity(zombie)
     }
 

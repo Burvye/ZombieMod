@@ -1,0 +1,11 @@
+{
+  "required": false,
+  "package": "burvy.mixin.compat",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "GunFireMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 0
+  }
+}

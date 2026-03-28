@@ -1,9 +1,11 @@
 package burvy.mixin;
 
+import burvy.api.utilities.NoiseChecker;
 import burvy.api.utilities.TickChecker;
 import burvy.api.utilities.WaveSpawner;
 import burvy.api.utilities.ZombBlocks;
 import burvy.api.utilities.ZombCuller;
+import burvy.api.utilities.ZombInvestigate;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -22,7 +24,7 @@ import java.util.function.BooleanSupplier;
 public class TickEventMixin {
 
     @Unique
-    private static final int WAVE_TIME = 200; // in ticks
+    private static final int WAVE_TIME = 600; // 30 seconds
 
     @Unique
     private int timer = 0;
@@ -43,10 +45,15 @@ public class TickEventMixin {
             return;
         }
 
+        long tick = server.getTickCount();
+
         // zombie world modification per tick across all dimensions
         for (ServerLevel level : server.getAllLevels()) {
             ZombBlocks.INSTANCE.tick(level);
+            NoiseChecker.INSTANCE.tick(level);
         }
+
+        ZombInvestigate.INSTANCE.cleanup(tick);
 
         // wave spawner per wave time around all players
         timer++;

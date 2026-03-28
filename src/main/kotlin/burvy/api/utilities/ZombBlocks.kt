@@ -49,7 +49,7 @@ object ZombBlocks {
             Blocks.RED_CONCRETE,
             Blocks.BLACK_CONCRETE,
             Blocks.OBSIDIAN,
-            Blocks.CRYING_OBSIDIAN
+            Blocks.CRYING_OBSIDIAN,
         )
 
     fun tick(level: ServerLevel) {
@@ -75,12 +75,13 @@ object ZombBlocks {
                 if (processed >= MAX_PER_TICK) break
                 if (!seen.add(zombie.uuid)) continue
 
-                val target = zombie.target ?: continue
+                val zombiePos = zombie.blockPosition()
+                val targetPos =
+                    zombie.target?.blockPosition()
+                        ?: ZombInvestigate.getTarget(zombie.uuid)
+                        ?: continue
                 val tickPrev = cooldowns[zombie.uuid] ?: 0L
                 if (tick - tickPrev < COOLDOWN_TICKS) continue
-
-                val zombiePos = zombie.blockPosition()
-                val targetPos = target.blockPosition()
                 val skyExposed = level.canSeeSky(zombiePos)
 
                 val acted =
