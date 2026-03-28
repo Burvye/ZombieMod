@@ -23,19 +23,10 @@ repositories {
 }
 
 loom {
-    splitEnvironmentSourceSets()
-
     mods {
         register("burvy-zombie-mod") {
             sourceSet(sourceSets.main.get())
-            sourceSet(sourceSets.getByName("client"))
         }
-    }
-}
-
-fabricApi {
-    configureDataGeneration {
-        client = true
     }
 }
 

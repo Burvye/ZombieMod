@@ -3,14 +3,10 @@
 	"id": "burvy-zombie-mod",
 	"version": "${version}",
 	"name": "Burvy Zombie Mod",
-	"description": "This is an example description! Tell everyone what your mod is about!",
+	"description": "Zombie apocalypse overhaul",
 	"authors": [
-		"Me!"
+		"Burvy"
 	],
-	"contact": {
-		"homepage": "https://fabricmc.net/",
-		"sources": "https://github.com/FabricMC/fabric-example-mod"
-	},
 	"license": "CC0-1.0",
 	"icon": "assets/burvy-zombie-mod/icon.png",
 	"environment": "*",
@@ -20,26 +16,10 @@
 				"value": "burvy.BurvyZombieMod",
 				"adapter": "kotlin"
 			}
-		],
-		"client": [
-			{
-				"value": "burvy.BurvyZombieModClient",
-				"adapter": "kotlin"
-			}
-		],
-		"fabric-datagen": [
-			{
-				"value": "burvy.BurvyZombieModDataGenerator",
-				"adapter": "kotlin"
-			}
 		]
 	},
 	"mixins": [
-		"burvy-zombie-mod.mixins.json",
-		{
-			"config": "burvy-zombie-mod.client.mixins.json",
-			"environment": "client"
-		}
+		"burvy-zombie-mod.mixins.json"
 	],
 	"depends": {
 		"fabricloader": ">=0.18.4",
