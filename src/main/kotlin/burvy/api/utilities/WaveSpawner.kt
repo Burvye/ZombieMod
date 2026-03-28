@@ -13,7 +13,7 @@ object WaveSpawner {
 
     /**
      * Spawns a wave of zombies around the player.
-     * Wave size increases if spawning in a dark area above the player.
+     * Wave size increases if spawning in a dark area above the player. (in buildings)
      */
     fun spawnWave(
         level: ServerLevel,
@@ -21,11 +21,11 @@ object WaveSpawner {
     ) {
         val playerPos = player.blockPosition()
 
-        val samplePos = ZombSpawner.posAround(level, playerPos) ?: return
+        val spawnPos = ZombSpawner.posAround(level, playerPos) ?: return
 
         val isDarkAbove =
-            level.getMaxLocalRawBrightness(samplePos) < DARKNESS_THRESHOLD &&
-                samplePos.y > playerPos.y
+            level.getMaxLocalRawBrightness(spawnPos) < DARKNESS_THRESHOLD &&
+                spawnPos.y > playerPos.y
         val waveSize = if (isDarkAbove) DEADLY_WAVE_SIZE else WAVE_SIZE
 
         ZombSpawner.zombAround(level, player, waveSize)
