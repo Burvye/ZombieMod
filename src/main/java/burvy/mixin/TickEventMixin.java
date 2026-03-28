@@ -1,7 +1,9 @@
 package burvy.mixin;
 
+import burvy.api.utilities.TickChecker;
 import burvy.api.utilities.WaveSpawner;
 import burvy.api.utilities.ZombBlocks;
+import burvy.api.utilities.ZombCuller;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -26,8 +28,20 @@ public class TickEventMixin {
     private int timer = 0;
 
     @Inject(method = "tickServer", at = @At("HEAD"))
-    private void onServerTick(BooleanSupplier booleanSupplier, CallbackInfo ci) {
+    private void tick(BooleanSupplier booleanSupplier, CallbackInfo ci) {
         MinecraftServer server = (MinecraftServer) (Object) this;
+        TickChecker.INSTANCE.tickStart();
+
+        // cull zombies if lagging
+        for (ServerLevel level : server.getAllLevels()) {
+            ZombCuller.INSTANCE.tick(level);
+        }
+
+        // stop everything else if we are lagging
+        if (TickChecker.INSTANCE.isLagging()) {
+            timer++;
+            return;
+        }
 
         // zombie world modification per tick across all dimensions
         for (ServerLevel level : server.getAllLevels()) {
@@ -42,5 +56,10 @@ public class TickEventMixin {
                 WaveSpawner.INSTANCE.spawnWave(level, player);
             }
         }
+    }
+
+    @Inject(method = "tickServer", at = @At("TAIL"))
+    private void tickEnd(BooleanSupplier booleanSupplier, CallbackInfo ci) {
+        TickChecker.INSTANCE.tickEnd();
     }
 }
