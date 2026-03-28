@@ -2,7 +2,7 @@ package burvy
 
 import burvy.api.utilities.NoiseChecker
 import net.fabricmc.api.ModInitializer
-import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents
+import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents
 import net.minecraft.server.level.ServerLevel
@@ -29,10 +29,8 @@ object BurvyZombieMod : ModInitializer {
             InteractionResult.PASS
         }
 
-        ServerLivingEntityEvents.AFTER_DEATH.register { entity, _ ->
-            if (entity is ServerPlayer) {
-                NoiseChecker.clearPlayer(entity.uuid)
-            }
+        ServerPlayerEvents.AFTER_RESPAWN.register { _, newPlayer, _ ->
+            NoiseChecker.clearPlayer(newPlayer.uuid)
         }
     }
 }
