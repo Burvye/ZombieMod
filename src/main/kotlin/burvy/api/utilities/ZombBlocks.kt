@@ -48,6 +48,8 @@ object ZombBlocks {
             Blocks.GREEN_CONCRETE,
             Blocks.RED_CONCRETE,
             Blocks.BLACK_CONCRETE,
+            Blocks.OBSIDIAN,
+            Blocks.CRYING_OBSIDIAN
         )
 
     fun tick(level: ServerLevel) {
