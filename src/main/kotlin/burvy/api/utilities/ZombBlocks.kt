@@ -72,6 +72,19 @@ object ZombBlocks {
         }
     }
 
+    // try to break a block, skip if air or claimed
+    private fun tryBreak(
+        level: ServerLevel,
+        pos: BlockPos,
+    ): Boolean {
+        if (level.getBlockState(pos).isAir) return false
+        if (!ClaimChecker.isClaimed(level, pos)) {
+            level.setBlock(pos, Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS)
+        }
+        return true
+    }
+
+    // break blocks between zombie and target, pattern determines which positions to try
     private fun breakAt(
         level: ServerLevel,
         zombiePos: BlockPos,
@@ -81,38 +94,22 @@ object ZombBlocks {
         val dir = cardinalBetween(zombiePos, targetPos)
         val eyes = zombiePos.above()
 
-        val targets =
+        // processing inline
+        val hit =
             when (pattern) {
                 BreakPattern.DOWN ->
-                    listOf(
-                        zombiePos.relative(dir),
-                        zombiePos.below(),
-                        zombiePos.relative(dir).below(),
-                    )
+                    tryBreak(level, zombiePos.relative(dir)) or
+                        tryBreak(level, zombiePos.below()) or
+                        tryBreak(level, zombiePos.relative(dir).below())
                 BreakPattern.FORWARD ->
-                    listOf(
-                        eyes.relative(dir),
-                        zombiePos.relative(dir),
-                    )
+                    tryBreak(level, eyes.relative(dir)) or
+                        tryBreak(level, zombiePos.relative(dir))
                 BreakPattern.UP ->
-                    listOf(
-                        eyes.relative(dir),
-                        eyes.above(),
-                        eyes.relative(dir).above(),
-                    )
+                    tryBreak(level, eyes.relative(dir)) or
+                        tryBreak(level, eyes.above()) or
+                        tryBreak(level, eyes.relative(dir).above())
             }
 
-        var hit = false
-        for (pos in targets) {
-            val state = level.getBlockState(pos)
-            if (state.isAir) continue
-            hit = true
-            // skip actual breaking in claimed chunks (factions compat)
-            if (ClaimChecker.isClaimed(level, pos)) continue
-            level.setBlock(pos, Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS)
-        }
-
-        // play sound even if blocks were protected just to scare people a bit
         if (hit) {
             level.playSound(
                 null,
@@ -132,7 +129,7 @@ object ZombBlocks {
         zombie: Zombie,
         zombiePos: BlockPos,
     ): Boolean {
-        val center = Vec3(zombiePos.x.toDouble(), zombiePos.y.toDouble(), zombiePos.z.toDouble())
+        val center = Vec3.atLowerCornerOf(zombiePos)
         val box = AABB.ofSize(center, 3.0, 4.0, 3.0)
         val nearby = level.getEntitiesOfClass(Zombie::class.java, box)
         if (nearby.size < PILE_THRESHOLD) return false

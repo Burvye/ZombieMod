@@ -2,6 +2,7 @@ package burvy.api.utilities
 
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.entity.monster.zombie.Zombie
+import net.minecraft.world.item.Item
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 
@@ -10,17 +11,18 @@ import net.minecraft.world.item.Items
  */
 object ZombDrops {
     private data class Drop(
-        val item: ItemStack,
+        val item: Item,
+        val count: Int,
         val chance: Float,
     )
 
     private val DROPS =
         listOf(
-            Drop(ItemStack(Items.IRON_NUGGET, 1), 1.0f),
-            Drop(ItemStack(Items.GOLD_NUGGET, 1), 1.0f),
-            Drop(ItemStack(Items.GUNPOWDER, 2), 1.0f),
-            Drop(ItemStack(Items.BREAD, 1), 0.25f),
-            Drop(ItemStack(Items.SPRUCE_PLANKS, 16), 0.5f),
+            Drop(Items.IRON_NUGGET, 1, 1.0f),
+            Drop(Items.GOLD_NUGGET, 1, 1.0f),
+            Drop(Items.GUNPOWDER, 2, 1.0f),
+            Drop(Items.BREAD, 1, 0.25f),
+            Drop(Items.SPRUCE_PLANKS, 16, 0.5f),
         )
 
     fun onDeath(
@@ -29,7 +31,7 @@ object ZombDrops {
     ) {
         for (drop in DROPS) {
             if (drop.chance < 1.0f && level.random.nextFloat() >= drop.chance) continue
-            zombie.spawnAtLocation(level, drop.item.copy())
+            zombie.spawnAtLocation(level, ItemStack(drop.item, drop.count))
         }
     }
 }

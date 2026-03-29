@@ -18,18 +18,16 @@ object ZombCuller {
         if (timer % COOLDOWN_TICKS != 0) return
         if (!TickChecker.isLagging()) return
 
-        var culled = 0
-        for (player in level.players()) {
-            if (culled >= CULL_AMOUNT) break
-
-            val box = AABB.ofSize(player.position(), 192.0, 128.0, 192.0)
-            val zombies = level.getEntitiesOfClass(Zombie::class.java, box)
-
-            for (zombie in zombies) {
-                if (culled >= CULL_AMOUNT) break
-                zombie.discard()
-                culled++
-            }
-        }
+        // flatten all player-nearby zombies into one stream, cull first zombies
+        level
+            .players()
+            .asSequence()
+            .flatMap { player ->
+                level.getEntitiesOfClass(
+                    Zombie::class.java,
+                    AABB.ofSize(player.position(), 192.0, 128.0, 192.0),
+                )
+            }.take(CULL_AMOUNT)
+            .forEach { it.discard() }
     }
 }
