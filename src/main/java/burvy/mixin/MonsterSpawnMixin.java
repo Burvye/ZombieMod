@@ -5,6 +5,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.NaturalSpawner;
 import net.minecraft.world.level.biome.MobSpawnSettings;
 import net.minecraft.world.level.chunk.ChunkAccess;
@@ -36,7 +37,12 @@ public class MonsterSpawnMixin {
         if (mobCategory != MobCategory.MONSTER) return;
 
         Optional<MobSpawnSettings.SpawnerData> result = cir.getReturnValue();
-        if (result.isPresent() && result.get().type() != EntityType.ZOMBIE) {
+        if (result.isEmpty()) return;
+        EntityType<?> type = result.get().type();
+        if (type != EntityType.ZOMBIE
+                && type != EntityType.HUSK
+                && type != EntityType.DROWNED
+                && type != EntityType.ZOMBIE_VILLAGER) {
             cir.setReturnValue(Optional.empty());
         }
     }
@@ -59,14 +65,14 @@ public class MonsterSpawnMixin {
             playerDistXZSq = Math.min(playerDistXZSq, dx * dx + dz * dz);
         }
 
-        // outside of 24 < x < 64, cant spawn
+        // outside 24 < x < 64, cant spawn
         if (playerDistXZSq < 576.0 || playerDistXZSq > 4096.0) {
             cir.setReturnValue(false);
             return;
         }
 
-        // cant see sky, cant spawn
-        if (!dimension.canSeeSky(pos)) {
+        // overworld only: cant see sky, cant spawn
+        if (dimension.dimension() == Level.OVERWORLD && !dimension.canSeeSky(pos)) {
             cir.setReturnValue(false);
         }
     }

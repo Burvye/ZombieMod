@@ -9,12 +9,12 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Pseudo
-@Mixin(targets = "burvy.gunmod.gun.animation.PlayerGunState")
+@Mixin(targets = "burvy.gunmod.gun.animation.GunAnimationController")
 public class GunFireMixin {
 
 	// gun mod hook, change when updating gun mod
-	// TODO: Change signature when gun mod is rewritten to Kotlin
-	@Inject(method = "fireShot", at = @At("HEAD"), require = 0)
+	// TODO: Change when gun mod is rewritten
+	@Inject(method = "startFiring", at = @At("HEAD"), require = 0)
 	private void onGunfire(ServerPlayer player, CallbackInfo ci) {
 		NoiseChecker.INSTANCE.gunshot(player);
 	}

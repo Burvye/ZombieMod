@@ -34,6 +34,13 @@ object ZombInvestigate {
         }
     }
 
+    fun setTarget(
+        zombieId: UUID,
+        pos: BlockPos,
+    ) {
+        targets[zombieId] = pos
+    }
+
     fun getTarget(zombieId: UUID): BlockPos? = targets[zombieId]
 
     fun hasTarget(zombieId: UUID): Boolean = targets.containsKey(zombieId)

@@ -6,8 +6,10 @@
     "TickEventMixin",
     "MobAccessor",
     "MonsterSpawnMixin",
-    "ZombieAIMixin",
-    "BlockPlaceMixin"
+    "ZombieStatsMixin",
+    "ZombieGoalsMixin",
+    "DrownedMixin",
+    "DamageNoiseMixin"
   ],
   "injectors": {
     "defaultRequire": 1

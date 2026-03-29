@@ -26,8 +26,12 @@ object WaveSpawner {
         val isDarkAbove =
             level.getMaxLocalRawBrightness(spawnPos) < DARKNESS_THRESHOLD &&
                 spawnPos.y > playerPos.y
-        val waveSize = if (isDarkAbove) DEADLY_WAVE_SIZE else WAVE_SIZE
+        val desired = if (isDarkAbove) DEADLY_WAVE_SIZE else WAVE_SIZE
+        val waveSize = desired.coerceAtMost(ZombCap.remaining(level, player))
+        if (waveSize <= 0) return
 
-        ZombSpawner.zombAround(level, player, waveSize)
+        repeat(waveSize) {
+            ZombSpawner.zombAt(level, spawnPos, player)
+        }
     }
 }

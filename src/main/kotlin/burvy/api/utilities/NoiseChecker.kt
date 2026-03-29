@@ -13,33 +13,44 @@ import net.minecraft.world.phys.AABB
 import java.util.UUID
 
 /**
- * Tick stealth
+ * Alert spawns waves
+ * Detected aggroes all zombies
  */
 object NoiseChecker {
-    private const val STEALTH_COOLDOWN = 1200L // 60s
-    private const val LOS_CHECK_INTERVAL = 20
-    private const val LOS_RANGE_SQ = 16.0 // 4 blocks squared
+    private const val ALERT_TIME = 600L // 30s
+    private const val DETECTED_TIME = 600L // 30s
+    private const val SUDDEN_WAVES = 4
+    private const val CHECK_INTERVAL = 20
+    private const val DETECT_RANGE_SQ = 64.0 // 8 blocks sq
+    private const val AGGRO_SPREAD = 192.0 // 96 block radius
 
     private val ALERT_SOUND: Holder<SoundEvent> =
         Holder.direct(SoundEvent.createVariableRangeEvent(Identifier.parse("gbg:alert")))
 
-    private val noisyPlayers = HashMap<UUID, Long>()
+    private val alerted = HashMap<UUID, Long>()
+    private val detected = HashMap<UUID, Long>()
 
     enum class NoiseType(
         val radius: Int,
     ) {
-        SPRINT(32),
-        BLOCK_BREAK(48),
-        BLOCK_PLACE(48),
+        SPRINT(16),
+        BLOCK_BREAK(16),
         ATTACK(96),
+        HURT(64),
         GUNFIRE(96),
     }
 
-    fun isNoisy(player: ServerPlayer): Boolean {
-        val lastNoise = noisyPlayers[player.uuid] ?: return false
-        val level = player.level()
-        return level.server.tickCount - lastNoise < STEALTH_COOLDOWN
+    fun isDetected(player: ServerPlayer): Boolean {
+        val stamp = detected[player.uuid] ?: return false
+        return player.level().server.tickCount - stamp < DETECTED_TIME
     }
+
+    fun isAlerted(player: ServerPlayer): Boolean {
+        val stamp = alerted[player.uuid] ?: return false
+        return player.level().server.tickCount - stamp < ALERT_TIME
+    }
+
+    fun isNoisy(player: ServerPlayer): Boolean = isDetected(player)
 
     fun makeNoise(
         player: ServerPlayer,
@@ -47,8 +58,8 @@ object NoiseChecker {
         pos: BlockPos,
         type: NoiseType,
     ) {
-        val wasQuiet = !isNoisy(player)
-        noisyPlayers[player.uuid] = level.server.tickCount.toLong()
+        val wasQuiet = !isAlerted(player)
+        alerted[player.uuid] = level.server.tickCount.toLong()
         ZombInvestigate.zombAlert(level, pos, type.radius)
 
         if (wasQuiet) {
@@ -64,11 +75,13 @@ object NoiseChecker {
                     level.random.nextLong(),
                 ),
             )
+            repeat(SUDDEN_WAVES) { WaveSpawner.spawnWave(level, player) }
         }
     }
 
     fun clearPlayer(playerId: UUID) {
-        noisyPlayers.remove(playerId)
+        alerted.remove(playerId)
+        detected.remove(playerId)
     }
 
     // gunshot API
@@ -77,7 +90,6 @@ object NoiseChecker {
         makeNoise(player, level, player.blockPosition(), NoiseType.GUNFIRE)
     }
 
-    // detection per tick
     fun tick(level: ServerLevel) {
         if (TickChecker.isLagging()) return
         val tick = level.server.tickCount
@@ -89,40 +101,35 @@ object NoiseChecker {
             }
         }
 
-        if (tick % LOS_CHECK_INTERVAL != 0) return
+        if (tick % CHECK_INTERVAL != 0) return
 
         for (player in level.players()) {
-            if (isNoisy(player)) continue
+            if (isDetected(player)) continue
 
-            // LOS detection at 4 blocks
-            val nearBox = AABB.ofSize(player.position(), 8.0, 8.0, 8.0)
-            val nearZombies = level.getEntitiesOfClass(Zombie::class.java, nearBox)
-            var detected = false
-
-            for (zombie in nearZombies) {
-                if (zombie.distanceToSqr(player) > LOS_RANGE_SQ) continue
-                if (zombie.sensing.hasLineOfSight(player)) {
-                    makeNoise(player, level, player.blockPosition(), NoiseType.ATTACK)
-                    detected = true
+            if (isAlerted(player)) {
+                val nearBox = AABB.ofSize(player.position(), 16.0, 16.0, 16.0)
+                val nearZombies = level.getEntitiesOfClass(Zombie::class.java, nearBox)
+                for (zombie in nearZombies) {
+                    if (zombie.target != player) continue
+                    detected[player.uuid] = tick.toLong()
+                    val aggroBox = AABB.ofSize(zombie.position(), AGGRO_SPREAD, 128.0, AGGRO_SPREAD)
+                    for (z in level.getEntitiesOfClass(Zombie::class.java, aggroBox)) {
+                        z.target = player
+                    }
                     break
                 }
-            }
-
-            if (detected) continue
-
-            // dont track this stealthy player
-            val wideBox = AABB.ofSize(player.position(), 192.0, 128.0, 192.0)
-            val allZombies = level.getEntitiesOfClass(Zombie::class.java, wideBox)
-            for (zombie in allZombies) {
-                if (zombie.target == player && zombie.distanceToSqr(player) > LOS_RANGE_SQ) {
-                    zombie.target = null
+            } else {
+                val box = AABB.ofSize(player.position(), 192.0, 128.0, 192.0)
+                for (zombie in level.getEntitiesOfClass(Zombie::class.java, box)) {
+                    if (zombie.target == player && zombie.distanceToSqr(player) > DETECT_RANGE_SQ) {
+                        zombie.target = null
+                    }
                 }
             }
         }
-
-        // cleanup stale entries
         if (tick % 200 == 0) {
-            noisyPlayers.entries.removeIf { tick - it.value > STEALTH_COOLDOWN * 2 }
+            alerted.entries.removeIf { tick - it.value > ALERT_TIME * 2 }
+            detected.entries.removeIf { tick - it.value > DETECTED_TIME * 2 }
         }
     }
 }

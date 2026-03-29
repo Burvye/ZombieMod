@@ -6,6 +6,8 @@ import net.minecraft.server.level.ServerLevel
 import net.minecraft.sounds.SoundEvents
 import net.minecraft.sounds.SoundSource
 import net.minecraft.world.entity.monster.zombie.Zombie
+import net.minecraft.world.level.Level
+import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.block.Blocks
 import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
@@ -13,66 +15,24 @@ import java.util.UUID
 import kotlin.math.abs
 
 /**
- * Zombie world modification: breaking blocks and piling gravel.
- * Runs every tick, processes up to 5 zombies per tick.
- * Each zombie has a 5-second personal cooldown.
+ * Zombie world modification. Runs every 5 seconds, processes all zombies.
  */
 object ZombBlocks {
-    private const val COOLDOWN_TICKS = 100
-    private const val MAX_PER_TICK = 5
-    private const val PILE_THRESHOLD = 5
-    private const val SOUND_VOLUME = 2.0f // (volume * 16 blocks)
-
-    private val cooldowns = HashMap<UUID, Long>()
-
-    private val SAFE_BLOCKS =
-        setOf(
-            Blocks.IRON_DOOR,
-            Blocks.IRON_BLOCK,
-            Blocks.DIAMOND_BLOCK,
-            Blocks.NETHERITE_BLOCK,
-            Blocks.GOLD_BLOCK,
-            Blocks.WHITE_CONCRETE,
-            Blocks.ORANGE_CONCRETE,
-            Blocks.MAGENTA_CONCRETE,
-            Blocks.LIGHT_BLUE_CONCRETE,
-            Blocks.YELLOW_CONCRETE,
-            Blocks.LIME_CONCRETE,
-            Blocks.PINK_CONCRETE,
-            Blocks.GRAY_CONCRETE,
-            Blocks.LIGHT_GRAY_CONCRETE,
-            Blocks.CYAN_CONCRETE,
-            Blocks.PURPLE_CONCRETE,
-            Blocks.BLUE_CONCRETE,
-            Blocks.BROWN_CONCRETE,
-            Blocks.GREEN_CONCRETE,
-            Blocks.RED_CONCRETE,
-            Blocks.BLACK_CONCRETE,
-            Blocks.OBSIDIAN,
-            Blocks.CRYING_OBSIDIAN,
-        )
+    private const val COOLDOWN_TICKS = 100 // 5 seconds
+    private const val PILE_THRESHOLD = 5 // amount of zombies before turning into block
+    private const val SOUND_VOLUME = 2.0f // 32 blocks
 
     fun tick(level: ServerLevel) {
         val tick = level.server.tickCount.toLong()
-        var processed = 0
+        if (tick % COOLDOWN_TICKS != 0L) return
+
         val seen = HashSet<UUID>()
 
-        // cleanup stale ticks
-        if (tick % 200 == 0L) {
-            cooldowns.entries.removeIf { tick - it.value > COOLDOWN_TICKS * 2 }
-        }
-
-        // processing only zombies around players
         for (player in level.players()) {
-            if (processed >= MAX_PER_TICK) break
-
-            // i mean zombies in range
             val range = AABB.ofSize(player.position(), 192.0, 128.0, 192.0)
             val zombies = level.getEntitiesOfClass(Zombie::class.java, range)
 
             for (zombie in zombies) {
-                // this second check prevents wasted iterations as the zombies
-                if (processed >= MAX_PER_TICK) break
                 if (!seen.add(zombie.uuid)) continue
 
                 val zombiePos = zombie.blockPosition()
@@ -80,29 +40,18 @@ object ZombBlocks {
                     zombie.target?.blockPosition()
                         ?: ZombInvestigate.getTarget(zombie.uuid)
                         ?: continue
-                val tickPrev = cooldowns[zombie.uuid] ?: 0L
-                if (tick - tickPrev < COOLDOWN_TICKS) continue
-                val skyExposed = level.canSeeSky(zombiePos)
+                val canPile =
+                    level.dimension() != Level.OVERWORLD || level.canSeeSky(zombiePos)
 
-                val acted =
-                    when {
-                        // player above + sky exposed -> pile
-                        targetPos.y > zombiePos.y && skyExposed ->
-                            pileAt(level, zombie, zombiePos)
-                        // player above + sky covered -> break upward
-                        targetPos.y > zombiePos.y ->
-                            breakAt(level, zombiePos, targetPos, BreakPattern.UP)
-                        // player level -> break forward
-                        targetPos.y == zombiePos.y ->
-                            breakAt(level, zombiePos, targetPos, BreakPattern.FORWARD)
-                        // player below -> break downward
-                        else ->
-                            breakAt(level, zombiePos, targetPos, BreakPattern.DOWN)
-                    }
-
-                if (acted) {
-                    cooldowns[zombie.uuid] = tick
-                    processed++
+                when {
+                    targetPos.y > zombiePos.y && canPile ->
+                        pileAt(level, zombie, zombiePos)
+                    targetPos.y > zombiePos.y ->
+                        breakAt(level, zombiePos, targetPos, BreakPattern.UP)
+                    targetPos.y == zombiePos.y ->
+                        breakAt(level, zombiePos, targetPos, BreakPattern.FORWARD)
+                    else ->
+                        breakAt(level, zombiePos, targetPos, BreakPattern.DOWN)
                 }
             }
         }
@@ -130,21 +79,20 @@ object ZombBlocks {
         pattern: BreakPattern,
     ): Boolean {
         val dir = cardinalBetween(zombiePos, targetPos)
-        val feet = zombiePos
-        val eyes = feet.above()
+        val eyes = zombiePos.above()
 
         val targets =
             when (pattern) {
                 BreakPattern.DOWN ->
                     listOf(
-                        feet.relative(dir),
-                        feet.below(),
-                        feet.relative(dir).below(),
+                        zombiePos.relative(dir),
+                        zombiePos.below(),
+                        zombiePos.relative(dir).below(),
                     )
                 BreakPattern.FORWARD ->
                     listOf(
                         eyes.relative(dir),
-                        feet.relative(dir),
+                        zombiePos.relative(dir),
                     )
                 BreakPattern.UP ->
                     listOf(
@@ -154,16 +102,18 @@ object ZombBlocks {
                     )
             }
 
-        var broken = false
+        var hit = false
         for (pos in targets) {
             val state = level.getBlockState(pos)
             if (state.isAir) continue
-            if (state.block in SAFE_BLOCKS) continue
-            level.removeBlock(pos, false)
-            broken = true
+            hit = true
+            // skip actual breaking in claimed chunks (factions compat)
+            if (ClaimChecker.isClaimed(level, pos)) continue
+            level.setBlock(pos, Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS)
         }
 
-        if (broken) {
+        // play sound even if blocks were protected just to scare people a bit
+        if (hit) {
             level.playSound(
                 null,
                 zombiePos,
@@ -174,7 +124,7 @@ object ZombBlocks {
             )
         }
 
-        return broken
+        return hit
     }
 
     private fun pileAt(
@@ -182,7 +132,6 @@ object ZombBlocks {
         zombie: Zombie,
         zombiePos: BlockPos,
     ): Boolean {
-        // 3x4x3 box around zombie (at block origin pos)
         val center = Vec3(zombiePos.x.toDouble(), zombiePos.y.toDouble(), zombiePos.z.toDouble())
         val box = AABB.ofSize(center, 3.0, 4.0, 3.0)
         val nearby = level.getEntitiesOfClass(Zombie::class.java, box)
@@ -200,8 +149,6 @@ object ZombBlocks {
         )
 
         zombie.discard()
-        cooldowns.remove(zombie.uuid)
-
         return true
     }
 }
