@@ -1,6 +1,6 @@
 package burvy.mixin;
 
-import burvy.api.utilities.NoiseChecker;
+import burvy.systems.NoiseChecker;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
@@ -22,12 +22,12 @@ public class DamageNoiseMixin {
 
 		// player took damage
 		if ((Object) this instanceof ServerPlayer victim) {
-			NoiseChecker.INSTANCE.makeNoise(victim, level, victim.blockPosition(), NoiseChecker.NoiseType.HURT);
+			NoiseChecker.INSTANCE.makeNoise(victim, level, NoiseChecker.NoiseType.HURT);
 		}
 
 		// player dealt damage (melee, projectile, gun, etc.)
 		if (source.getEntity() instanceof ServerPlayer attacker && attacker.level() instanceof ServerLevel attackerLevel) {
-			NoiseChecker.INSTANCE.makeNoise(attacker, attackerLevel, attacker.blockPosition(), NoiseChecker.NoiseType.ATTACK);
+			NoiseChecker.INSTANCE.makeNoise(attacker, attackerLevel, NoiseChecker.NoiseType.ATTACK);
 		}
 	}
 }

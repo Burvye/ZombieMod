@@ -1,6 +1,6 @@
 package burvy.mixin.compat;
 
-import burvy.api.utilities.NoiseChecker;
+import burvy.systems.NoiseChecker;
 import net.minecraft.server.level.ServerPlayer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
@@ -12,7 +12,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(targets = "burvy.gunmod.gun.animation.GunAnimationController")
 public class GunFireMixin {
 
-	// gun mod hook, change when updating gun mod
 	// TODO: Change when gun mod is rewritten
 	@Inject(method = "startFiring", at = @At("HEAD"), require = 0)
 	private void onGunfire(ServerPlayer player, CallbackInfo ci) {

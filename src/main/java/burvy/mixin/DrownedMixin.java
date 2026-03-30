@@ -20,7 +20,7 @@ public class DrownedMixin {
 	@Inject(method = "createAttributes", at = @At("HEAD"), cancellable = true)
 	private static void attributes(CallbackInfoReturnable<AttributeSupplier.Builder> cir) {
 		cir.setReturnValue(Monster.createMonsterAttributes()
-				.add(Attributes.FOLLOW_RANGE, 96.0)
+				.add(Attributes.FOLLOW_RANGE, 4.0)
 				.add(Attributes.MOVEMENT_SPEED, 4.0)
 				.add(Attributes.ATTACK_DAMAGE, 3.0)
 				.add(Attributes.ARMOR, 2.0)

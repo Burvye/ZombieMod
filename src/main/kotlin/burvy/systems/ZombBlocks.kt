@@ -1,12 +1,12 @@
-package burvy.api.utilities
+package burvy.systems
 
+import burvy.api.utilities.ClaimChecker
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.sounds.SoundEvents
 import net.minecraft.sounds.SoundSource
 import net.minecraft.world.entity.monster.zombie.Zombie
-import net.minecraft.world.level.Level
 import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.block.Blocks
 import net.minecraft.world.phys.AABB
@@ -15,7 +15,7 @@ import java.util.UUID
 import kotlin.math.abs
 
 /**
- * Zombie world modification. Runs every 5 seconds, processes all zombies.
+ * Run zombie building/breaking every 5 seconds
  */
 object ZombBlocks {
     private const val COOLDOWN_TICKS = 100 // 5 seconds
@@ -34,18 +34,13 @@ object ZombBlocks {
 
             for (zombie in zombies) {
                 if (!seen.add(zombie.uuid)) continue
+                val targetPos = zombie.target?.blockPosition() ?: continue
 
                 val zombiePos = zombie.blockPosition()
-                val targetPos =
-                    zombie.target?.blockPosition()
-                        ?: ZombInvestigate.getTarget(zombie.uuid)
-                        ?: continue
-                val canPile =
-                    level.dimension() != Level.OVERWORLD || level.canSeeSky(zombiePos)
+                // always try to pile first
+                if (pileAt(level, zombie, zombiePos)) continue
 
                 when {
-                    targetPos.y > zombiePos.y && canPile ->
-                        pileAt(level, zombie, zombiePos)
                     targetPos.y > zombiePos.y ->
                         breakAt(level, zombiePos, targetPos, BreakPattern.UP)
                     targetPos.y == zombiePos.y ->
@@ -72,8 +67,8 @@ object ZombBlocks {
         }
     }
 
-    // try to break a block, skip if air or claimed
-    private fun tryBreak(
+    // break this block as a zombie
+    private fun breakBlock(
         level: ServerLevel,
         pos: BlockPos,
     ): Boolean {
@@ -84,7 +79,7 @@ object ZombBlocks {
         return true
     }
 
-    // break blocks between zombie and target, pattern determines which positions to try
+    // break blocks between zombie and target depending on vertical diff
     private fun breakAt(
         level: ServerLevel,
         zombiePos: BlockPos,
@@ -94,20 +89,20 @@ object ZombBlocks {
         val dir = cardinalBetween(zombiePos, targetPos)
         val eyes = zombiePos.above()
 
-        // processing inline
+        // processing inline (functional programmingg)
         val hit =
             when (pattern) {
                 BreakPattern.DOWN ->
-                    tryBreak(level, zombiePos.relative(dir)) or
-                        tryBreak(level, zombiePos.below()) or
-                        tryBreak(level, zombiePos.relative(dir).below())
+                    breakBlock(level, zombiePos.relative(dir)) or
+                        breakBlock(level, zombiePos.below()) or
+                        breakBlock(level, zombiePos.relative(dir).below())
                 BreakPattern.FORWARD ->
-                    tryBreak(level, eyes.relative(dir)) or
-                        tryBreak(level, zombiePos.relative(dir))
+                    breakBlock(level, eyes.relative(dir)) or
+                        breakBlock(level, zombiePos.relative(dir))
                 BreakPattern.UP ->
-                    tryBreak(level, eyes.relative(dir)) or
-                        tryBreak(level, eyes.above()) or
-                        tryBreak(level, eyes.relative(dir).above())
+                    breakBlock(level, eyes.relative(dir)) or
+                        breakBlock(level, eyes.above()) or
+                        breakBlock(level, eyes.relative(dir).above())
             }
 
         if (hit) {
@@ -133,6 +128,8 @@ object ZombBlocks {
         val box = AABB.ofSize(center, 3.0, 4.0, 3.0)
         val nearby = level.getEntitiesOfClass(Zombie::class.java, box)
         if (nearby.size < PILE_THRESHOLD) return false
+        // pile non full blocks only
+        if (level.getBlockState(zombiePos).isCollisionShapeFullBlock(level, zombiePos)) return false
 
         level.setBlockAndUpdate(zombiePos, Blocks.GRAVEL.defaultBlockState())
 

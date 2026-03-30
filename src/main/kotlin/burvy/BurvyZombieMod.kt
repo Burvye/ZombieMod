@@ -1,7 +1,7 @@
 package burvy
 
-import burvy.api.utilities.NoiseChecker
-import burvy.api.utilities.ZombDrops
+import burvy.systems.NoiseChecker
+import burvy.systems.ZombDrops
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents
@@ -22,7 +22,7 @@ object BurvyZombieMod : ModInitializer {
 
         PlayerBlockBreakEvents.AFTER.register { level, player, _, _, _ ->
             if (player is ServerPlayer && level is ServerLevel) {
-                NoiseChecker.makeNoise(player, level, player.blockPosition(), NoiseChecker.NoiseType.BLOCK_BREAK)
+                NoiseChecker.makeNoise(player, level, NoiseChecker.NoiseType.BLOCK_BREAK)
             }
         }
 
@@ -41,7 +41,7 @@ object BurvyZombieMod : ModInitializer {
         ServerEntityEvents.ENTITY_LOAD.register { entity, _ ->
             if (entity is Drowned) {
                 entity.getAttribute(Attributes.MOVEMENT_SPEED)?.baseValue = 4.0
-                entity.getAttribute(Attributes.FOLLOW_RANGE)?.baseValue = 96.0
+                entity.getAttribute(Attributes.FOLLOW_RANGE)?.baseValue = 4.0
             }
         }
     }

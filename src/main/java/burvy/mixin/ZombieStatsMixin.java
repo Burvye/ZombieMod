@@ -18,7 +18,7 @@ public class ZombieStatsMixin {
 	@Inject(method = "createAttributes", at = @At("HEAD"), cancellable = true)
 	private static void customAttributes(CallbackInfoReturnable<AttributeSupplier.Builder> cir) {
 		cir.setReturnValue(Monster.createMonsterAttributes()
-				.add(Attributes.FOLLOW_RANGE, 96.0)
+				.add(Attributes.FOLLOW_RANGE, 4.0)
 				.add(Attributes.MOVEMENT_SPEED, 0.3F)
 				.add(Attributes.ATTACK_DAMAGE, 3.0)
 				.add(Attributes.ARMOR, 2.0)

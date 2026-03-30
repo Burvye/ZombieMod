@@ -1,4 +1,4 @@
-package burvy.api.utilities
+package burvy.systems
 
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.entity.monster.zombie.Zombie
@@ -29,6 +29,7 @@ object ZombDrops {
         zombie: Zombie,
         level: ServerLevel,
     ) {
+        if (zombie.lastHurtByPlayer == null) return
         for (drop in DROPS) {
             if (drop.chance < 1.0f && level.random.nextFloat() >= drop.chance) continue
             zombie.spawnAtLocation(level, ItemStack(drop.item, drop.count))

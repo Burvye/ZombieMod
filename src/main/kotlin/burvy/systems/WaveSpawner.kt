@@ -1,5 +1,8 @@
-package burvy.api.utilities
+package burvy.systems
 
+import burvy.api.utilities.TickChecker
+import burvy.api.utilities.ZombCap
+import burvy.api.utilities.ZombSpawner
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
 
@@ -19,6 +22,7 @@ object WaveSpawner {
         level: ServerLevel,
         player: ServerPlayer,
     ) {
+        if (TickChecker.isLagging()) return
         val playerPos = player.blockPosition()
 
         val spawnPos = ZombSpawner.posAround(level, playerPos) ?: return

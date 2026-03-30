@@ -1,11 +1,10 @@
 package burvy.mixin;
 
-import burvy.api.utilities.NoiseChecker;
 import burvy.api.utilities.TickChecker;
-import burvy.api.utilities.WaveSpawner;
-import burvy.api.utilities.ZombBlocks;
-import burvy.api.utilities.ZombCuller;
-import burvy.api.utilities.ZombInvestigate;
+import burvy.systems.NoiseChecker;
+import burvy.systems.WaveSpawner;
+import burvy.systems.ZombBlocks;
+import burvy.systems.ZombCuller;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -24,7 +23,7 @@ import java.util.function.BooleanSupplier;
 public class TickEventMixin {
 
     @Unique
-    private static final int WAVE_TIME = 600; // 30 seconds
+    private static final int WAVE_TIME = 200; // 10 seconds
 
     @Unique
     private int timer = 0;
@@ -39,24 +38,15 @@ public class TickEventMixin {
             ZombCuller.INSTANCE.tick(level);
         }
 
-        // stop everything else if we are lagging
-        if (TickChecker.INSTANCE.isLagging()) {
-            timer++;
-            return;
-        }
-
-        long tick = server.getTickCount();
-
-        // zombie world modification per tick across all dimensions
+        // zombie world modification and noise processing
         for (ServerLevel level : server.getAllLevels()) {
             ZombBlocks.INSTANCE.tick(level);
             NoiseChecker.INSTANCE.tick(level);
         }
 
-        ZombInvestigate.INSTANCE.cleanup(tick);
-
-        // wave spawner per wave time around all players
+        // skip spawning when lagging
         timer++;
+        if (TickChecker.INSTANCE.isLagging()) return;
         if (timer % WAVE_TIME != 0) return;
         for (ServerLevel level : server.getAllLevels()) {
             for (ServerPlayer player : level.players()) {

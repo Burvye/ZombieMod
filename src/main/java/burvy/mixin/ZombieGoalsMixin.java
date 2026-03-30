@@ -1,7 +1,6 @@
 package burvy.mixin;
 
-import burvy.api.ai.InvestigateGoal;
-import burvy.api.utilities.NoiseChecker;
+import burvy.systems.NoiseChecker;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.ai.goal.WaterAvoidingRandomStrollGoal;
 import net.minecraft.world.entity.ai.goal.ZombieAttackGoal;
@@ -28,18 +27,28 @@ public class ZombieGoalsMixin {
 		accessor.getGoalSelector().removeAllGoals(goal -> true);
 		accessor.getTargetSelector().removeAllGoals(goal -> true);
 
-		// noisy players will be heard everywhere, quiet players are heard in a range of 8 - the default
+		// noisy players target anywhere quiet players only 4
 		TargetingConditions.Selector noisies = (target, level) -> {
 			if (!(target instanceof ServerPlayer sp)) return false;
-			if (NoiseChecker.INSTANCE.isNoisy(sp)) return true;
-			return zombie.distanceToSqr(target) <= 64.0;
+			return NoiseChecker.INSTANCE.isNoisy(sp);
 		};
+
+		// scan attackable every 20 ticks
 		accessor.getTargetSelector().addGoal(1, new NearestAttackableTargetGoal<>(
-				zombie, Player.class, false, noisies
+				zombie, Player.class, 20, false, false, noisies
 		));
-		accessor.getGoalSelector().addGoal(2, new ZombieAttackGoal(zombie, 1.0, false));
-		accessor.getGoalSelector().addGoal(3, new InvestigateGoal(zombie));
-		accessor.getGoalSelector().addGoal(4, new WaterAvoidingRandomStrollGoal(zombie, 0.8));
+
+		accessor.getGoalSelector().addGoal(2, new ZombieAttackGoal(zombie, 1.0, false) {
+			private int repathTimer = 0;
+			@Override
+			public void tick() {
+				if (++repathTimer % 10 == 0) {
+					super.tick();
+				}
+			}
+		});
+
+		accessor.getGoalSelector().addGoal(3, new WaterAvoidingRandomStrollGoal(zombie, 0.8));
 
 		ci.cancel();
 	}
