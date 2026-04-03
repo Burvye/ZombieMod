@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(targets = "burvy.gunmod.gun.animation.GunAnimationController")
 public class GunFireMixin {
 
-	// TODO: Change when gun mod is rewritten
+	// TODO LATER: Change when gun mod is rewritten
 	@Inject(method = "startFiring", at = @At("HEAD"), require = 0)
 	private void onGunfire(ServerPlayer player, CallbackInfo ci) {
 		NoiseChecker.INSTANCE.gunshot(player);

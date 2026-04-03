@@ -1,7 +1,6 @@
 package burvy.mixin;
 
 import burvy.api.utilities.TickChecker;
-import burvy.systems.NoiseChecker;
 import burvy.systems.WaveSpawner;
 import burvy.systems.ZombBlocks;
 import burvy.systems.ZombCuller;
@@ -32,8 +31,9 @@ public class TickEventMixin {
     private void tick(BooleanSupplier booleanSupplier, CallbackInfo ci) {
         MinecraftServer server = (MinecraftServer) (Object) this;
         TickChecker.INSTANCE.tickStart();
+        timer++; // moved timer up here
 
-        // cull zombies if lagging
+        // cull zombies if badly lagging
         for (ServerLevel level : server.getAllLevels()) {
             ZombCuller.INSTANCE.tick(level);
         }
@@ -41,11 +41,10 @@ public class TickEventMixin {
         // zombie world modification and noise processing
         for (ServerLevel level : server.getAllLevels()) {
             ZombBlocks.INSTANCE.tick(level);
-            NoiseChecker.INSTANCE.tick(level);
+            // NoiseChecker doesn't have a tick function
         }
 
         // skip spawning when lagging
-        timer++;
         if (TickChecker.INSTANCE.isLagging()) return;
         if (timer % WAVE_TIME != 0) return;
         for (ServerLevel level : server.getAllLevels()) {

@@ -20,7 +20,7 @@ import kotlin.math.abs
 object ZombBlocks {
     private const val COOLDOWN_TICKS = 100 // 5 seconds
     private const val PILE_THRESHOLD = 5 // amount of zombies before turning into block
-    private const val SOUND_VOLUME = 2.0f // 32 blocks
+    private const val SOUND_VOLUME = 3.0f // 3 * 16 blocks
 
     fun tick(level: ServerLevel) {
         val tick = level.server.tickCount.toLong()
@@ -119,6 +119,7 @@ object ZombBlocks {
         return hit
     }
 
+    // TODO: Hook into zombie deaths. If a zombie dies of fall damage, also pile at.
     private fun pileAt(
         level: ServerLevel,
         zombie: Zombie,

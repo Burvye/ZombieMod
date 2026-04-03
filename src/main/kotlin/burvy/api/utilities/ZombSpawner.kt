@@ -1,6 +1,5 @@
 package burvy.api.utilities
 
-import burvy.systems.NoiseChecker
 import net.minecraft.core.BlockPos
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
@@ -17,9 +16,9 @@ import kotlin.math.sin
 object ZombSpawner {
     const val MIN_DISTANCE = 24
     const val MAX_DISTANCE = 64
-    private const val MIN_Y = 70
+    private const val MIN_Y = 110
 
-    // spawn a zombie targeting the given player if noisy
+    // spawn a zombie targeting the given player
     fun zombAt(
         level: ServerLevel,
         pos: BlockPos,
@@ -28,13 +27,13 @@ object ZombSpawner {
         val zombie = EntityType.ZOMBIE.create(level, EntitySpawnReason.NATURAL) ?: return
         zombie.setPos(pos.x + 0.5, pos.y.toDouble(), pos.z + 0.5)
         zombie.yRot = level.random.nextFloat() * 360
-        if (NoiseChecker.isNoisy(target)) {
-            zombie.target = target
-        }
+        zombie.target = target
         level.addFreshEntity(zombie)
     }
 
     // find a good position around a location for spawning
+    // TODO: Don't allow spawning in claimed chunks (isClaimed in ClaimChecker) unless above MIN_Y
+    // TODO: Allow zombies to spawn on water with 2 air above it, but make 3x3 water below turn into ice
     fun posAround(
         level: ServerLevel,
         center: BlockPos,
@@ -47,9 +46,8 @@ object ZombSpawner {
             val x = center.x + (cos(rngAngle) * rngDist).toInt()
             val z = center.z + (sin(rngAngle) * rngDist).toInt()
 
-            // overworld below Y 70: heightmap surface
-            // overworld above Y 70: any valid spot near player Y
-            // other dimensions: any valid spot near player Y
+            // overworld below Y 110: heightmap surface
+            // else, search nearest spot near player Y
             val pos =
                 if (overworld && center.y < MIN_Y) {
                     val surfaceY = level.getHeight(Heightmap.Types.MOTION_BLOCKING, x, z)
@@ -74,6 +72,7 @@ object ZombSpawner {
         z: Int,
         startY: Int,
     ): BlockPos? {
+        // alternate between next min Y and next max Y
         val maxY = level.maxY - 1
         val minY = level.minY + 1
         for (offset in 0..(maxY - minY)) {

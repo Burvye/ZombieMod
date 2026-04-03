@@ -1,6 +1,5 @@
 package burvy.mixin;
 
-import burvy.systems.NoiseChecker;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.ai.goal.WaterAvoidingRandomStrollGoal;
 import net.minecraft.world.entity.ai.goal.ZombieAttackGoal;
@@ -19,37 +18,40 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(Zombie.class)
 public class ZombieGoalsMixin {
 
-	@Inject(method = "registerGoals", at = @At("HEAD"), cancellable = true)
-	private void simpleGoals(CallbackInfo ci) {
-		Zombie zombie = (Zombie) (Object) this;
-		MobAccessor accessor = (MobAccessor) zombie;
+    @Inject(method = "registerGoals", at = @At("HEAD"), cancellable = true)
+    private void simpleGoals(CallbackInfo ci) {
+        Zombie zombie = (Zombie) (Object) this;
+        MobAccessor accessor = (MobAccessor) zombie;
 
-		accessor.getGoalSelector().removeAllGoals(goal -> true);
-		accessor.getTargetSelector().removeAllGoals(goal -> true);
+        accessor.getGoalSelector().removeAllGoals(goal -> true);
+        accessor.getTargetSelector().removeAllGoals(goal -> true);
 
-		// noisy players target anywhere quiet players only 4
-		TargetingConditions.Selector noisies = (target, level) -> {
-			if (!(target instanceof ServerPlayer sp)) return false;
-			return NoiseChecker.INSTANCE.isNoisy(sp);
-		};
+        // target players within 96 blocks
+        TargetingConditions.Selector nearbyPlayers = (target, level) -> {
+            if (!(target instanceof ServerPlayer sp)) return false;
+            return zombie.distanceToSqr(sp) < 9216.0; // 96^2
+        };
 
-		// scan attackable every 20 ticks
-		accessor.getTargetSelector().addGoal(1, new NearestAttackableTargetGoal<>(
-				zombie, Player.class, 20, false, false, noisies
-		));
+        // scan attackable every 20 ticks
+        accessor.getTargetSelector().addGoal(1, new NearestAttackableTargetGoal<>(
+                zombie, Player.class, 20, false, false, nearbyPlayers
+        ));
 
-		accessor.getGoalSelector().addGoal(2, new ZombieAttackGoal(zombie, 1.0, false) {
-			private int repathTimer = 0;
-			@Override
-			public void tick() {
-				if (++repathTimer % 10 == 0) {
-					super.tick();
-				}
-			}
-		});
+        // TODO: Somehow make Minecraft A* pathfinding not block up the server thread or stagger pathfinding (intensive!)
+        // TODO 2: Somehow make pathfinding chunked? Just pathfinding closer to a player rather than to them directly?
+        accessor.getGoalSelector().addGoal(2, new ZombieAttackGoal(zombie, 1.0, false) {
+            private int repathTimer = 0;
 
-		accessor.getGoalSelector().addGoal(3, new WaterAvoidingRandomStrollGoal(zombie, 0.8));
+            @Override
+            public void tick() {
+                if (++repathTimer % 10 == 0) {
+                    super.tick();
+                }
+            }
+        });
+        // wander for all zombies even drowneds they dont matter
+        accessor.getGoalSelector().addGoal(3, new WaterAvoidingRandomStrollGoal(zombie, 0.8));
 
-		ci.cancel();
-	}
+        ci.cancel();
+    }
 }

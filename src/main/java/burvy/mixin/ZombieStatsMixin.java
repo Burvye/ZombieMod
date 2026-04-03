@@ -25,8 +25,5 @@ public class ZombieStatsMixin {
 				.add(Attributes.SPAWN_REINFORCEMENTS_CHANCE, 0.0));
 	}
 
-	@Inject(method = "isSunSensitive", at = @At("HEAD"), cancellable = true)
-	private void sunLiberation(CallbackInfoReturnable<Boolean> cir) {
-		cir.setReturnValue(false);
-	}
+	// removed sun sensitive override
 }

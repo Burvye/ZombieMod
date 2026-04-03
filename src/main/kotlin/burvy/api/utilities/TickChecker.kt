@@ -5,9 +5,13 @@ package burvy.api.utilities
  */
 object TickChecker {
     private const val THRESHOLD_MS = 35.0
+    private const val THRESHOLD_MS_HEAVY = 50.0
 
     // this is the only thing you will need
     fun isLagging(): Boolean = tickPrev > THRESHOLD_MS
+
+    // if on the cusp of being too much
+    fun isBadlyLagging(): Boolean = tickPrev > THRESHOLD_MS_HEAVY
 
     private var tickStart: Long = 0L
     private var tickPrev: Double = 0.0

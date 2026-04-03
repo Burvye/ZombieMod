@@ -9,7 +9,7 @@ import net.minecraft.server.level.ServerLevel
  * Current factions mod is io.icker.factions
  * We use "Claim.get(chunkX, chunkZ, dimensionString)" from "io.icker.factions.faction.api.Claim"
  *
- * TODO: Update when the factions mod is reworked.
+ * TODO LATER:  Update when the factions mod is reworked.
  */
 object ClaimChecker {
     private val getMethod =

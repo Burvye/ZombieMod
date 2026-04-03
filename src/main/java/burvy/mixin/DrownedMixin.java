@@ -20,9 +20,9 @@ public class DrownedMixin {
 	@Inject(method = "createAttributes", at = @At("HEAD"), cancellable = true)
 	private static void attributes(CallbackInfoReturnable<AttributeSupplier.Builder> cir) {
 		cir.setReturnValue(Monster.createMonsterAttributes()
-				.add(Attributes.FOLLOW_RANGE, 4.0)
-				.add(Attributes.MOVEMENT_SPEED, 4.0)
-				.add(Attributes.ATTACK_DAMAGE, 3.0)
+				.add(Attributes.FOLLOW_RANGE, 16.0)
+				.add(Attributes.MOVEMENT_SPEED, 0.25)
+				.add(Attributes.ATTACK_DAMAGE, 10.0)
 				.add(Attributes.ARMOR, 2.0)
 				.add(Attributes.SPAWN_REINFORCEMENTS_CHANCE, 0.0)
 				.add(Attributes.STEP_HEIGHT, 1.0));
@@ -32,8 +32,10 @@ public class DrownedMixin {
 	private void swim(Vec3 vec3, double d, boolean bl, double e, CallbackInfo ci) {
 		Drowned drowned = (Drowned) (Object) this;
 		if (drowned.isUnderWater()) {
-			drowned.moveRelative(0.1F, vec3);
-			drowned.setDeltaMovement(drowned.getDeltaMovement().scale(0.9));
+			// speedy swimming
+			drowned.moveRelative(1.0F, vec3);
+			// original damping = 0.96
+			drowned.setDeltaMovement(drowned.getDeltaMovement().scale(0.96));
 			ci.cancel();
 		}
 	}

@@ -10,8 +10,8 @@ import net.minecraft.server.level.ServerPlayer
  * Higher level wave spawning utilities
  */
 object WaveSpawner {
-    private const val WAVE_SIZE = 16
-    private const val DEADLY_WAVE_SIZE = 32
+    private const val WAVE_SIZE = 12
+    private const val DEADLY_WAVE_SIZE = 23 // 24 is mob cramping threshold
     private const val DARKNESS_THRESHOLD = 7
 
     /**
