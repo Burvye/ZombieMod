@@ -28,15 +28,12 @@ public class DrownedMixin {
 				.add(Attributes.STEP_HEIGHT, 1.0));
 	}
 
-	@Inject(method = "travelInWater", at = @At("HEAD"), cancellable = true)
-	private void swim(Vec3 vec3, double d, boolean bl, double e, CallbackInfo ci) {
+	@Inject(method = "travelInWater", at = @At("RETURN"))
+	private void swimFaster(Vec3 vec3, double d, boolean bl, double e, CallbackInfo ci) {
 		Drowned drowned = (Drowned) (Object) this;
 		if (drowned.isUnderWater()) {
-			// speedy swimming
-			drowned.moveRelative(1.0F, vec3);
-			// original damping = 0.96
-			drowned.setDeltaMovement(drowned.getDeltaMovement().scale(0.96));
-			ci.cancel();
+			// 3 times faster swimming
+			drowned.setDeltaMovement(drowned.getDeltaMovement().scale(3.0));
 		}
 	}
 }

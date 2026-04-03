@@ -23,11 +23,11 @@ object NoiseChecker {
     enum class NoiseType(
         val radius: Int,
     ) {
-        BLOCK_BREAK(64),
-        ATTACK(128),
+        BLOCK_BREAK(32),
+        ATTACK(64),
         HURT(96),
-        GUNFIRE(128),
-        SPRINT(32),
+        GUNFIRE(96),
+        SPRINT(48),
     }
 
     /**
@@ -46,25 +46,43 @@ object NoiseChecker {
             // predicate filters during the iteration itself which is more efficient
             val zombies =
                 level.getEntities(player, box) { entity ->
-                    entity is Zombie && entity.isAlive && entity.target == null
+                    entity is Zombie && entity.isAlive
                 }
 
             for (entity in zombies) {
                 if (entity is Zombie) {
-                    entity.target = player
-                    // TODO: queue up a few sounds to play over a few ticks rather than all at once to avoid packet spam
-                    player.connection.send(
-                        ClientboundSoundPacket(
-                            ALERT_SOUND,
-                            SoundSource.HOSTILE,
-                            entity.x,
-                            entity.y,
-                            entity.z,
-                            4.0f,
-                            0.5f,
-                            level.random.nextLong(),
-                        ),
-                    )
+                    val distanceToNoiseMaker = entity.distanceToSqr(player)
+
+                    // aggro towards noise maker since im not targeting anyone
+                    if (entity.target == null) {
+                        entity.target = player
+                        player.connection.send(
+                            ClientboundSoundPacket(
+                                ALERT_SOUND,
+                                SoundSource.HOSTILE,
+                                entity.x,
+                                entity.y,
+                                entity.z,
+                                4.0f,
+                                0.5f,
+                                level.random.nextLong(),
+                            ),
+                        )
+                    } else if (distanceToNoiseMaker < entity.distanceToSqr(entity.target!!)) {
+                        entity.target = player
+                        player.connection.send(
+                            ClientboundSoundPacket(
+                                ALERT_SOUND,
+                                SoundSource.HOSTILE,
+                                entity.x,
+                                entity.y,
+                                entity.z,
+                                4.0f,
+                                0.5f,
+                                level.random.nextLong(),
+                            ),
+                        )
+                    }
                 }
             }
         }

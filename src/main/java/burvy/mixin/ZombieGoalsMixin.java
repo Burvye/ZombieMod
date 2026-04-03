@@ -1,8 +1,10 @@
 package burvy.mixin;
 
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.ai.goal.RandomSwimmingGoal;
 import net.minecraft.world.entity.ai.goal.WaterAvoidingRandomStrollGoal;
 import net.minecraft.world.entity.ai.goal.ZombieAttackGoal;
+import net.minecraft.world.entity.monster.zombie.Drowned;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.ai.targeting.TargetingConditions;
 import net.minecraft.world.entity.monster.zombie.Zombie;
@@ -49,8 +51,12 @@ public class ZombieGoalsMixin {
                 }
             }
         });
-        // wander for all zombies even drowneds they dont matter
-        accessor.getGoalSelector().addGoal(3, new WaterAvoidingRandomStrollGoal(zombie, 0.8));
+        // drowneds should stay in water, other zombies avoid it
+        if (zombie instanceof Drowned) {
+            accessor.getGoalSelector().addGoal(3, new RandomSwimmingGoal(zombie, 1.0, 40));
+        } else {
+            accessor.getGoalSelector().addGoal(3, new WaterAvoidingRandomStrollGoal(zombie, 0.8));
+        }
 
         ci.cancel();
     }
