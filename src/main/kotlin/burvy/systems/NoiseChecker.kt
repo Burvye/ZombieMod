@@ -27,6 +27,7 @@ object NoiseChecker {
         ATTACK(128),
         HURT(96),
         GUNFIRE(128),
+        SPRINT(32),
     }
 
     /**
@@ -41,18 +42,24 @@ object NoiseChecker {
         if (!TickChecker.isLagging()) {
             val r = type.radius.toDouble()
             val box = AABB.ofSize(player.position(), r * 2, 128.0, r * 2)
-            for (zombie in level.getEntitiesOfClass(Zombie::class.java, box)) {
-                val current = zombie.target
-                if (current == null || !current.isAlive) {
-                    zombie.target = player
-                    // sending a sound for each zombie at the zombie's location
+
+            // predicate filters during the iteration itself which is more efficient
+            val zombies =
+                level.getEntities(player, box) { entity ->
+                    entity is Zombie && entity.isAlive && entity.target == null
+                }
+
+            for (entity in zombies) {
+                if (entity is Zombie) {
+                    entity.target = player
+                    // TODO: queue up a few sounds to play over a few ticks rather than all at once to avoid packet spam
                     player.connection.send(
                         ClientboundSoundPacket(
                             ALERT_SOUND,
                             SoundSource.HOSTILE,
-                            zombie.x,
-                            zombie.y,
-                            zombie.z,
+                            entity.x,
+                            entity.y,
+                            entity.z,
                             4.0f,
                             0.5f,
                             level.random.nextLong(),
@@ -62,6 +69,7 @@ object NoiseChecker {
             }
         }
 
+        // TODO: Spawn zombies until mob cap is filled more directly instead of relying on spawnWave
         repeat(SUDDEN_WAVES) { WaveSpawner.spawnWave(level, player) }
     }
 
@@ -72,5 +80,16 @@ object NoiseChecker {
         makeNoise(player, level, NoiseType.GUNFIRE)
     }
 
-    // TODO: Detect sprint as an event instead of polling in tick()
+    /**
+     * tick check for sprinting players
+     */
+    fun tick(level: ServerLevel) {
+        if (TickChecker.isLagging()) return
+
+        for (player in level.players()) {
+            if (player.isSprinting) {
+                makeNoise(player, level, NoiseType.SPRINT)
+            }
+        }
+    }
 }
